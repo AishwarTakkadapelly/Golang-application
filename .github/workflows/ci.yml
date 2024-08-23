@@ -1,0 +1,57 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.23.0'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Build Go application
+      run: |
+        go build -o main .
+
+    - name: Build Docker image
+      run: |
+        docker build -t golang .
+
+    - name: Run tests
+      run: |
+        # Add your test command here
+        # For example: go test ./...
+        echo "Add your tests here"
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+    - name: Tag and push Docker image
+      run: |
+        docker tag golang ${{ secrets.DOCKER_HUB_USERNAME }}/golang:latest
+        docker push ${{ secrets.DOCKER_HUB_USERNAME }}/golang:latest
